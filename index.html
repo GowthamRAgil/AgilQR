@@ -1,49 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Secure Check-In</title>
+  <meta charset="UTF-8">
+  <title>QR Code Location Check</title>
   <script>
-    const targetLat = 13.024521;  // Your latitude
-    const targetLng = 77.637181;  // Your longitude
-    const allowedRadius = 100;  // meters
+    function checkLocation() {
+      // Define the allowed coordinates (Latitude, Longitude)
+      var allowedLatitude = 11.665713;
+      var allowedLongitude = 78.153734;
+      
+      // Get the user's current position
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          var userLatitude = position.coords.latitude;
+          var userLongitude = position.coords.longitude;
 
-    function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
-      const R = 6371000; // Radius of Earth in meters
-      const dLat = (lat2-lat1) * Math.PI/180;
-      const dLon = (lon2-lon1) * Math.PI/180;
-      const a =
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
-
-    function checkAccess() {
-      if (!navigator.geolocation) {
-        document.body.innerHTML = "<h3>Geolocation not supported.</h3>";
-        return;
+          // Check if the user's location is close enough to the allowed coordinates
+          var distance = getDistance(userLatitude, userLongitude, allowedLatitude, allowedLongitude);
+          if (distance <= 100) { // Allow 100 meters tolerance
+            // Redirect to the form if within range
+            window.location.href = "https://form.jotform.com/251195033108045";
+          } else {
+            // Show error message if outside the allowed location
+            document.getElementById("message").innerHTML = "<h2>Access Denied</h2><p>You must be at the correct location to access the form.</p>";
+          }
+        }, function() {
+          document.getElementById("message").innerHTML = "<h2>Error</h2><p>Unable to retrieve your location.</p>";
+        });
+      } else {
+        document.getElementById("message").innerHTML = "<h2>Geolocation not supported</h2><p>Your browser does not support geolocation.</p>";
       }
-
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        const dist = getDistanceFromLatLonInM(pos.coords.latitude, pos.coords.longitude, targetLat, targetLng);
-        if (dist <= allowedRadius) {
-          const email = localStorage.getItem("email") || "";
-          const jotformURL = "https://form.jotform.com/251195033108045"; // Your JotForm link
-          const fullURL = email ? `${jotformURL}?email=${encodeURIComponent(email)}` : jotformURL;
-          window.location.href = fullURL;
-        } else {
-          document.body.innerHTML = "<h3>Access Denied: You're not at the location.</h3>";
-        }
-      }, function() {
-        document.body.innerHTML = "<h3>Permission denied for location. Access Denied.</h3>";
-      });
     }
 
-    window.onload = checkAccess;
+    // Function to calculate the distance between two geographical points
+    function getDistance(lat1, lon1, lat2, lon2) {
+      var R = 6371; // Radius of the Earth in km
+      var dLat = (lat2 - lat1) * (Math.PI / 180);
+      var dLon = (lon2 - lon1) * (Math.PI / 180);
+      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      var distance = R * c; // Distance in km
+      return distance * 1000; // Convert to meters
+    }
   </script>
 </head>
-<body>
-  <h3>Checking your location...</h3>
+<body onload="checkLocation()">
+  <div id="message"><h2>Loading...</h2></div>
 </body>
 </html>
