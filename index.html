@@ -1,18 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Redirecting...</title>
+  <title>Secure Check-In</title>
   <script>
-    function getUniqueLink() {
-      fetch("https://script.google.com/macros/s/AKfycbwDf34jQ42JTZE-m_jeVWQwacRn_mJNC6KZjigD07MWOCz8mkD4-73QZcOZs8euAPlFGg/exec?action=generate")
-        .then(response => response.text())
-        .then(url => window.location.href = url)
-        .catch(error => document.getElementById("message").innerHTML = "<h2>Error</h2><p>Please scan again.</p>");
+    const targetLat = 12.9716;  // Replace with your latitude
+    const targetLng = 77.5946;  // Replace with your longitude
+    const allowedRadius = 100;  // meters
+
+    function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // Radius of Earth in meters
+      const dLat = (lat2-lat1) * Math.PI/180;
+      const dLon = (lon2-lon1) * Math.PI/180;
+      const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
     }
+
+    function checkAccess() {
+      if (!navigator.geolocation) {
+        document.body.innerHTML = "<h3>Geolocation not supported.</h3>";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        const dist = getDistanceFromLatLonInM(pos.coords.latitude, pos.coords.longitude, targetLat, targetLng);
+        if (dist <= allowedRadius) {
+          const email = localStorage.getItem("email") || "";
+          const jotformURL = "https://form.jotform.com/your_form_id"; // Replace with your form link
+          const fullURL = email ? `${jotformURL}?email=${encodeURIComponent(email)}` : jotformURL;
+          window.location.href = fullURL;
+        } else {
+          document.body.innerHTML = "<h3>Access Denied: You're not at the location.</h3>";
+        }
+      }, function() {
+        document.body.innerHTML = "<h3>Permission denied for location. Access Denied.</h3>";
+      });
+    }
+
+    window.onload = checkAccess;
   </script>
 </head>
-<body onload="getUniqueLink()">
-  <div id="message"><h2>Loading...</h2></div>
+<body>
+  <h3>Checking your location...</h3>
 </body>
 </html>
